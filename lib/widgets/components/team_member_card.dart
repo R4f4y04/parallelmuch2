@@ -9,6 +9,7 @@ class TeamMember {
   final List<String> responsibilities;
   final IconData icon;
   final Color color;
+  final String? badge;
 
   const TeamMember({
     required this.name,
@@ -17,6 +18,7 @@ class TeamMember {
     required this.responsibilities,
     required this.icon,
     required this.color,
+    this.badge,
   });
 }
 
@@ -63,13 +65,51 @@ class TeamMemberCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          member.name,
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[200],
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              member.name,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[200],
+                              ),
+                            ),
+                            if (member.badge != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.amber[600]!,
+                                      Colors.orange[600]!,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.amber.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  member.badge!,
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(

@@ -26,6 +26,7 @@ class AboutScreen extends StatelessWidget {
       ],
       icon: Icons.code,
       color: Colors.blue,
+      badge: 'MALIK SAB',
     ),
     TeamMember(
       name: 'Musa Ali',

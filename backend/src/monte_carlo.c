@@ -22,13 +22,18 @@ double estimate_pi(long long N, int threads) {
 
     #pragma omp parallel
     {
-        unsigned int seed = time(NULL) + omp_get_thread_num();
+        // Thread-safe random number generation for Windows
+        unsigned int seed = (unsigned int)(time(NULL) + omp_get_thread_num() * 1000);
         long long local_hits = 0;
 
         #pragma omp for
         for (long long i = 0; i < N; i++) {
-            double x = (double)rand_r(&seed) / RAND_MAX;
-            double y = (double)rand_r(&seed) / RAND_MAX;
+            // Simple LCG (Linear Congruential Generator) for thread safety
+            seed = seed * 1103515245 + 12345;
+            double x = (double)(seed % 1000000) / 1000000.0;
+            
+            seed = seed * 1103515245 + 12345;
+            double y = (double)(seed % 1000000) / 1000000.0;
             
             if (x * x + y * y <= 1.0) {
                 local_hits++;

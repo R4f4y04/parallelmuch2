@@ -90,14 +90,6 @@ class _MainShellState extends State<MainShell> {
                 label: Text('Dashboard'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.history),
-                label: Text('History'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                label: Text('Settings'),
-              ),
-              NavigationRailDestination(
                 icon: Icon(Icons.info),
                 label: Text('About'),
               ),
@@ -175,10 +167,6 @@ class _MainShellState extends State<MainShell> {
           },
         );
       case 1:
-        return _buildPlaceholder('History', Icons.history);
-      case 2:
-        return _buildPlaceholder('Settings', Icons.settings);
-      case 3:
         return _buildAboutScreen();
       default:
         return _buildPlaceholder('Unknown', Icons.error);
@@ -254,10 +242,6 @@ class _MainShellState extends State<MainShell> {
       case 0:
         return 'Dashboard';
       case 1:
-        return 'History';
-      case 2:
-        return 'Settings';
-      case 3:
         return 'About';
       default:
         return 'Parallel Architecture Workbench';

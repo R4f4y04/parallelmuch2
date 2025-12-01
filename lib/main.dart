@@ -184,7 +184,7 @@ class _MainShellState extends State<MainShell> {
       case 1:
         return const ComparisonScreen();
       case 2:
-        return _buildAboutScreen();
+        return const AboutScreen();
       default:
         return _buildPlaceholder('Unknown', Icons.error);
     }
@@ -202,52 +202,6 @@ class _MainShellState extends State<MainShell> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAboutScreen() {
-    return Center(
-      child: Card(
-        margin: const EdgeInsets.all(32),
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.developer_board,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Parallel Architecture Workbench',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Version 1.0.0',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'A Computer Architecture Course Project',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Visualizing parallel performance with OpenMP',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

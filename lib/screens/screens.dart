@@ -6,3 +6,4 @@ export 'execution_screen.dart';
 export 'system_info_screen.dart';
 export 'code_viewer_screen.dart';
 export 'comparison_screen.dart';
+export 'about_screen.dart';

@@ -58,6 +58,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   AlgoConfig? _selectedAlgo;
+  bool _showExecutionScreen = false;
   final HardwareInfo _hardwareInfo = HardwareInfo.detect();
 
   @override
@@ -71,7 +72,10 @@ class _MainShellState extends State<MainShell> {
             onDestinationSelected: (index) {
               setState(() {
                 _selectedIndex = index;
-                if (index == 0) _selectedAlgo = null; // Return to dashboard
+                if (index == 0) {
+                  _selectedAlgo = null; // Return to dashboard
+                  _showExecutionScreen = false;
+                }
               });
             },
             labelType: NavigationRailLabelType.all,
@@ -153,9 +157,11 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildContent() {
-    // If an algorithm is selected, show code viewer screen
+    // If an algorithm is selected, show appropriate screen
     if (_selectedAlgo != null) {
-      return CodeViewerScreen(algoConfig: _selectedAlgo!);
+      return _showExecutionScreen
+          ? ExecutionScreen(algo: _selectedAlgo!)
+          : CodeViewerScreen(algoConfig: _selectedAlgo!);
     }
 
     // Otherwise show navigation-based content
@@ -163,11 +169,16 @@ class _MainShellState extends State<MainShell> {
       case 0:
         return DashboardScreen(
           onAlgoSelected: (algo) {
-            setState(() => _selectedAlgo = algo);
+            setState(() {
+              _selectedAlgo = algo;
+              _showExecutionScreen = false; // View Code
+            });
           },
           onQuickRun: (algo) {
-            setState(() => _selectedAlgo = algo);
-            // TODO: Auto-start with default settings
+            setState(() {
+              _selectedAlgo = algo;
+              _showExecutionScreen = true; // Run Benchmark
+            });
           },
         );
       case 1:

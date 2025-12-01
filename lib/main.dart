@@ -90,6 +90,10 @@ class _MainShellState extends State<MainShell> {
                 label: Text('Dashboard'),
               ),
               NavigationRailDestination(
+                icon: Icon(Icons.compare_arrows),
+                label: Text('Comparison'),
+              ),
+              NavigationRailDestination(
                 icon: Icon(Icons.info),
                 label: Text('About'),
               ),
@@ -167,6 +171,8 @@ class _MainShellState extends State<MainShell> {
           },
         );
       case 1:
+        return const ComparisonScreen();
+      case 2:
         return _buildAboutScreen();
       default:
         return _buildPlaceholder('Unknown', Icons.error);
@@ -242,6 +248,8 @@ class _MainShellState extends State<MainShell> {
       case 0:
         return 'Dashboard';
       case 1:
+        return 'Comparison';
+      case 2:
         return 'About';
       default:
         return 'Parallel Architecture Workbench';

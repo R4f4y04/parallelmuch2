@@ -8,3 +8,6 @@ export 'speedup_chart.dart';
 export 'config_panel.dart';
 export 'code_panel.dart';
 export 'annotation_card.dart';
+export 'comparison_table.dart';
+export 'efficiency_chart.dart';
+export 'metrics_card.dart';

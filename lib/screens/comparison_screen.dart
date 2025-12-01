@@ -8,7 +8,7 @@ import '../widgets/widgets.dart';
 /// Screen for comparing sequential vs parallel performance.
 ///
 /// Features:
-/// - Load multiple benchmark result sets
+/// - Run benchmarks directly with custom parameters
 /// - Visualize speedup and efficiency
 /// - Show Amdahl's Law overlay
 /// - Export comparison data
@@ -21,73 +21,165 @@ class ComparisonScreen extends StatefulWidget {
 
 class _ComparisonScreenState extends State<ComparisonScreen> {
   final ComparisonService _service = ComparisonService();
+  final ProcessRunnerService _runner = ProcessRunnerService();
+
   ComparisonSet? _selectedSet;
+  AlgoConfig? _selectedAlgo;
+
+  // Configuration parameters
+  int _problemSize = 1024;
+  int _minThreads = 1;
+  int _maxThreads = 8;
+
+  // Execution state
+  bool _isRunning = false;
+  int _currentIteration = 0;
+  int _totalIterations = 0;
+  String _terminalOutput = '';
 
   @override
   void initState() {
     super.initState();
-    _loadSampleData(); // For demonstration
-  }
-
-  void _loadSampleData() {
-    // Create sample data for demonstration
-    // In a real app, this would load from actual benchmark runs
-    final now = DateTime.now();
-    final sampleResults = [
-      BenchmarkResult(
-        algoId: 'matrix_mult',
-        threads: 1,
-        problemSize: 1024,
-        timeSeconds: 8.0,
-        timestamp: now,
-      ),
-      BenchmarkResult(
-        algoId: 'matrix_mult',
-        threads: 2,
-        problemSize: 1024,
-        timeSeconds: 4.2,
-        timestamp: now,
-      ),
-      BenchmarkResult(
-        algoId: 'matrix_mult',
-        threads: 4,
-        problemSize: 1024,
-        timeSeconds: 2.3,
-        timestamp: now,
-      ),
-      BenchmarkResult(
-        algoId: 'matrix_mult',
-        threads: 8,
-        problemSize: 1024,
-        timeSeconds: 1.4,
-        timestamp: now,
-      ),
-      BenchmarkResult(
-        algoId: 'matrix_mult',
-        threads: 16,
-        problemSize: 1024,
-        timeSeconds: 1.1,
-        timestamp: now,
-      ),
-    ];
-
-    setState(() {
-      final set = _service.addComparison('Matrix Multiplication', sampleResults);
-      _selectedSet = set;
-    });
+    // No sample data - user must run benchmarks
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _service.allSets.isEmpty
-          ? _buildEmptyState()
-          : _buildComparisonView(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showLoadDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Load Results'),
-        tooltip: 'Load benchmark results for comparison',
+      body: Row(
+        children: [
+          // Left panel - Configuration
+          _buildConfigPanel(),
+
+          // Right panel - Results or empty state
+          Expanded(
+            child: _selectedSet == null
+                ? _buildEmptyState()
+                : _buildComparisonView(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfigPanel() {
+    return Container(
+      width: 320,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1117),
+        border: Border(right: BorderSide(color: Colors.grey[800]!, width: 1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.settings,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Benchmark Setup',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Algorithm selection
+                  _buildSectionTitle('1. Select Algorithm'),
+                  const SizedBox(height: 12),
+                  _buildAlgorithmDropdown(),
+
+                  const SizedBox(height: 24),
+
+                  // Problem size
+                  if (_selectedAlgo != null) ...[
+                    _buildSectionTitle('2. Problem Size'),
+                    const SizedBox(height: 12),
+                    _buildProblemSizeControl(),
+
+                    const SizedBox(height: 24),
+
+                    // Thread range
+                    _buildSectionTitle('3. Thread Range'),
+                    const SizedBox(height: 12),
+                    _buildThreadRangeControl(),
+
+                    const SizedBox(height: 32),
+
+                    // Execute button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton.icon(
+                        onPressed: _isRunning ? null : _executeBenchmark,
+                        icon: _isRunning
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.play_arrow),
+                        label: Text(
+                          _isRunning ? 'Running...' : 'Run Benchmark',
+                        ),
+                      ),
+                    ),
+
+                    if (_isRunning) ...[
+                      const SizedBox(height: 16),
+                      _buildProgressIndicator(),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // Terminal output
+                    if (_terminalOutput.isNotEmpty) ...[
+                      _buildSectionTitle('Terminal Output'),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 200,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[800]!),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            _terminalOutput,
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 11,
+                              color: Colors.green[400],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -97,11 +189,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.compare_arrows,
-            size: 80,
-            color: Colors.grey[600],
-          ),
+          Icon(Icons.compare_arrows, size: 80, color: Colors.grey[600]),
           const SizedBox(height: 24),
           Text(
             'No Comparison Data',
@@ -109,14 +197,13 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Load benchmark results to start analyzing performance',
+            'Select an algorithm and run a benchmark',
             style: TextStyle(color: Colors.grey[400]),
           ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _showLoadDialog,
-            icon: const Icon(Icons.upload_file),
-            label: const Text('Load Results'),
+          const SizedBox(height: 8),
+          Text(
+            'to start analyzing performance',
+            style: TextStyle(color: Colors.grey[400]),
           ),
         ],
       ),
@@ -126,244 +213,335 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
   Widget _buildComparisonView() {
     if (_selectedSet == null) return _buildEmptyState();
 
-    return Row(
-      children: [
-        // Left sidebar - Comparison list
-        Container(
-          width: 280,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D1117),
-            border: Border(
-              right: BorderSide(
-                color: Colors.grey[800]!,
-                width: 1,
-              ),
+    return CustomScrollView(
+      slivers: [
+        // Header
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _selectedSet!.algoName,
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Performance Comparison Analysis',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton.outlined(
+                  onPressed: _exportCSV,
+                  icon: const Icon(Icons.download),
+                  tooltip: 'Export as CSV',
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  onPressed: _exportJSON,
+                  icon: const Icon(Icons.code),
+                  tooltip: 'Export as JSON',
+                ),
+              ],
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.folder_open,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Comparisons',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _service.allSets.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemBuilder: (context, index) {
-                    final set = _service.allSets[index];
-                    final isSelected = _selectedSet?.id == set.id;
-
-                    return Card(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                          : null,
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.assessment,
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                        ),
-                        title: Text(
-                          set.algoName,
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 13,
-                            fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _formatTimestamp(set.timestamp),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, size: 18),
-                          onPressed: () => _deleteComparison(set.id),
-                          tooltip: 'Delete',
-                        ),
-                        onTap: () => setState(() => _selectedSet = set),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
           ),
         ),
 
-        // Main content area
-        Expanded(
-          child: CustomScrollView(
-            slivers: [
-              // Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
+        // Content grid
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          sliver: SliverToBoxAdapter(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column - Chart and Table
+                Expanded(
+                  flex: 2,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selectedSet!.algoName,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Performance Comparison Analysis',
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                      EfficiencyChart(
+                        comparisonSet: _selectedSet!,
+                        service: _service,
                       ),
-                      IconButton.outlined(
-                        onPressed: _exportCSV,
-                        icon: const Icon(Icons.download),
-                        tooltip: 'Export as CSV',
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.outlined(
-                        onPressed: _exportJSON,
-                        icon: const Icon(Icons.code),
-                        tooltip: 'Export as JSON',
+                      const SizedBox(height: 16),
+                      ComparisonTable(
+                        comparisonSet: _selectedSet!,
+                        service: _service,
                       ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(width: 16),
 
-              // Content grid
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                sliver: SliverToBoxAdapter(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left column - Chart and Table
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          children: [
-                            EfficiencyChart(
-                              comparisonSet: _selectedSet!,
-                              service: _service,
-                            ),
-                            const SizedBox(height: 16),
-                            ComparisonTable(
-                              comparisonSet: _selectedSet!,
-                              service: _service,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-
-                      // Right column - Metrics
-                      Expanded(
-                        flex: 1,
-                        child: MetricsCard(
-                          metrics: _selectedSet!.metrics,
-                        ),
-                      ),
-                    ],
-                  ),
+                // Right column - Metrics
+                Expanded(
+                  flex: 1,
+                  child: MetricsCard(metrics: _selectedSet!.metrics),
                 ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
+              ],
+            ),
           ),
+        ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.jetBrainsMono(
+        fontSize: 13,
+        fontWeight: FontWeight.bold,
+        color: Colors.grey[400],
+      ),
+    );
+  }
+
+  Widget _buildAlgorithmDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161B22),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[800]!),
+      ),
+      child: DropdownButton<AlgoConfig>(
+        isExpanded: true,
+        value: _selectedAlgo,
+        hint: const Text('Choose algorithm...'),
+        underline: const SizedBox(),
+        dropdownColor: const Color(0xFF161B22),
+        items: AlgoConfig.allAlgorithms.map((algo) {
+          return DropdownMenuItem(
+            value: algo,
+            child: Text(
+              algo.name,
+              style: GoogleFonts.jetBrainsMono(fontSize: 12),
+            ),
+          );
+        }).toList(),
+        onChanged: (algo) {
+          setState(() {
+            _selectedAlgo = algo;
+            if (algo != null) {
+              _problemSize = algo.defaultSize;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildProblemSizeControl() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Size: $_problemSize',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 12,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              '${_selectedAlgo!.minSize} - ${_selectedAlgo!.maxSize}',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Slider(
+          value: _problemSize.toDouble(),
+          min: _selectedAlgo!.minSize.toDouble(),
+          max: _selectedAlgo!.maxSize.toDouble(),
+          divisions:
+              (_selectedAlgo!.maxSize - _selectedAlgo!.minSize) ~/
+              _selectedAlgo!.sizeStep,
+          onChanged: (value) {
+            setState(() => _problemSize = value.round());
+          },
         ),
       ],
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
-    return '${timestamp.day}/${timestamp.month}/${timestamp.year} '
-        '${timestamp.hour.toString().padLeft(2, '0')}:'
-        '${timestamp.minute.toString().padLeft(2, '0')}';
-  }
-
-  void _deleteComparison(String id) {
-    setState(() {
-      _service.removeComparison(id);
-      if (_selectedSet?.id == id) {
-        _selectedSet = _service.allSets.isNotEmpty ? _service.allSets.first : null;
-      }
-    });
-  }
-
-  void _showLoadDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Load Benchmark Results'),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'To load comparison data, run a benchmark from the Execution Screen. '
-                'Results will automatically be added here for analysis.',
-                style: TextStyle(fontSize: 14),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Steps:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('1. Select an algorithm from Dashboard'),
-              Text('2. Navigate to Execution Screen'),
-              Text('3. Run benchmark with multiple thread counts'),
-              Text('4. Return here to view comparison'),
-            ],
-          ),
+  Widget _buildThreadRangeControl() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Min Threads: $_minThreads',
+          style: GoogleFonts.jetBrainsMono(fontSize: 12, color: Colors.white),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // In a real implementation, navigate to dashboard
-            },
-            child: const Text('Go to Dashboard'),
-          ),
-        ],
-      ),
+        Slider(
+          value: _minThreads.toDouble(),
+          min: 1,
+          max: 16,
+          divisions: 15,
+          onChanged: (value) {
+            setState(() {
+              _minThreads = value.round();
+              if (_minThreads > _maxThreads) {
+                _maxThreads = _minThreads;
+              }
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Max Threads: $_maxThreads',
+          style: GoogleFonts.jetBrainsMono(fontSize: 12, color: Colors.white),
+        ),
+        Slider(
+          value: _maxThreads.toDouble(),
+          min: 1,
+          max: 16,
+          divisions: 15,
+          onChanged: (value) {
+            setState(() {
+              _maxThreads = value.round();
+              if (_maxThreads < _minThreads) {
+                _minThreads = _maxThreads;
+              }
+            });
+          },
+        ),
+      ],
     );
+  }
+
+  Widget _buildProgressIndicator() {
+    if (_totalIterations == 0) return const SizedBox();
+
+    final progress = _currentIteration / _totalIterations;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Progress',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 11,
+                color: Colors.grey[400],
+              ),
+            ),
+            Text(
+              '$_currentIteration / $_totalIterations',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 11,
+                color: Colors.grey[400],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Colors.grey[800],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _executeBenchmark() async {
+    if (_selectedAlgo == null || _isRunning) return;
+
+    setState(() {
+      _isRunning = true;
+      _terminalOutput = '';
+      _currentIteration = 0;
+    });
+
+    try {
+      // Generate thread counts
+      final threadCounts = <int>[];
+      for (int t = _minThreads; t <= _maxThreads; t *= 2) {
+        threadCounts.add(t);
+      }
+      if (!threadCounts.contains(_maxThreads)) {
+        threadCounts.add(_maxThreads);
+      }
+
+      setState(() => _totalIterations = threadCounts.length);
+
+      final results = <BenchmarkResult>[];
+
+      // Run benchmarks for each thread count
+      for (final threads in threadCounts) {
+        setState(() {
+          _currentIteration++;
+          _terminalOutput += '\nRunning with $threads threads...\n';
+        });
+
+        final result = await _runner.runBenchmark(
+          algoId: _selectedAlgo!.id,
+          problemSize: _problemSize,
+          threads: threads,
+          onStdout: (output) {
+            setState(() => _terminalOutput += output);
+          },
+          onStderr: (error) {
+            setState(() => _terminalOutput += '[ERROR] $error\n');
+          },
+        );
+
+        results.add(result);
+
+        setState(() {
+          _terminalOutput +=
+              '✓ Completed: ${result.timeSeconds.toStringAsFixed(3)}s\n';
+        });
+      }
+
+      // Create comparison set
+      final set = _service.addComparison(_selectedAlgo!.name, results);
+
+      setState(() {
+        _selectedSet = set;
+        _terminalOutput += '\n✓ Benchmark complete! Analysis ready.\n';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Benchmark completed successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _terminalOutput += '\n✗ Error: $e\n';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Benchmark failed: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isRunning = false);
+    }
   }
 
   void _exportCSV() {

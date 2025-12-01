@@ -149,9 +149,9 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildContent() {
-    // If an algorithm is selected, show execution screen
+    // If an algorithm is selected, show code viewer screen
     if (_selectedAlgo != null) {
-      return ExecutionScreen(algo: _selectedAlgo!);
+      return CodeViewerScreen(algoConfig: _selectedAlgo!);
     }
 
     // Otherwise show navigation-based content

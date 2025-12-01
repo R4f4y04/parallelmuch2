@@ -18,6 +18,10 @@ dependencies:
   
   # UI/Typography
   google_fonts: ^6.2.1
+  
+  # Code Highlighting
+  flutter_highlight: ^0.7.0
+  highlight: ^0.7.0
 
 dev_dependencies:
   flutter_test:

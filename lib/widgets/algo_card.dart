@@ -73,8 +73,8 @@ class AlgoCard extends StatelessWidget {
                   if (onConfigure != null)
                     TextButton.icon(
                       onPressed: onConfigure,
-                      icon: const Icon(Icons.settings, size: 18),
-                      label: const Text('Configure'),
+                      icon: const Icon(Icons.code, size: 18),
+                      label: const Text('View Code'),
                     ),
                   const SizedBox(width: 8),
                   if (onQuickRun != null)
